@@ -41,6 +41,8 @@
   </div>
 
   <script>
+    // @ts-nocheck
+    (function(){
     const canvas = document.getElementById('scene');
     const ctx = canvas.getContext('2d');
 
@@ -302,7 +304,7 @@
     // ===== Ramo central =====
     class Flower{
       constructor(type, x, y, size){
-        this.type = type; // 'lily'|'daisy'|'poppy'
+        this.type = type;
         this.x = x;
         this.y = y;
         this.baseY = y;
@@ -322,30 +324,9 @@
         // sombra suave
         ctx.shadowColor = 'rgba(0,0,0,0.25)';
         ctx.shadowBlur = 8;
-        // dibujar según tipo
+        // dibujar según tipo (solo variantes usadas en index.html)
         const s = this.size;
-        if(this.type === 'lily'){
-          // lirio amarillo: pétalos grandes curvados
-          const grad = ctx.createLinearGradient(-s/2,-s,s/2,s);
-          grad.addColorStop(0,'#FFE082');
-          grad.addColorStop(1,'#FFC107');
-          ctx.fillStyle = grad;
-          ctx.strokeStyle = this.stroke;
-          ctx.lineWidth = Math.max(1, s/16);
-          for(let i=0;i<5;i++){
-            ctx.save();
-            ctx.rotate((i/5)*Math.PI*2 + i*0.06);
-            ctx.beginPath();
-            ctx.moveTo(0,0);
-            ctx.bezierCurveTo(s*0.6, -s*0.2, s*1.0, -s*0.9, 0, -s);
-            ctx.bezierCurveTo(-s*1.0, -s*0.9, -s*0.6, -s*0.2, 0,0);
-            ctx.closePath();
-            ctx.fill(); ctx.stroke();
-            ctx.restore();
-          }
-          ctx.beginPath(); ctx.fillStyle = '#FF8F00'; ctx.arc(0,0,s*0.18,0,Math.PI*2); ctx.fill();
-        } else if(this.type === 'sunflower'){
-          // girasol: muchos pétalos amarillos y centro marrón
+        if(this.type === 'sunflower'){
           ctx.strokeStyle = this.stroke;
           ctx.lineWidth = Math.max(1, s/28);
           const petals = 18;
@@ -357,23 +338,10 @@
             ctx.fillStyle = '#FFD54A'; ctx.fill(); ctx.stroke();
             ctx.restore();
           }
-          // centro
           const grad = ctx.createRadialGradient(0,0,s*0.1,0,0,s*0.5);
           grad.addColorStop(0,'#6D3B00');
           grad.addColorStop(1,'#3E2200');
           ctx.beginPath(); ctx.fillStyle = grad; ctx.arc(0,0,s*0.45,0,Math.PI*2); ctx.fill();
-        } else if(this.type === 'rose'){
-          // rosa estilizada: capas de pétalos
-          ctx.fillStyle = '#FFC107';
-          ctx.strokeStyle = this.stroke;
-          ctx.lineWidth = Math.max(1, s/26);
-          // dibujar varias capas de arcos
-          for(let i=0;i<6;i++){
-            ctx.beginPath();
-            const r = s*0.9 - i*(s*0.12);
-            ctx.ellipse(0, -i*(s*0.04), r, r*0.7, i*0.12, 0, Math.PI*2);
-            ctx.fill(); ctx.stroke();
-          }
         } else if(this.type === 'daisy'){
           ctx.fillStyle = '#FFE082';
           ctx.strokeStyle = this.stroke;
@@ -385,14 +353,33 @@
             ctx.fill(); ctx.stroke(); ctx.restore();
           }
           ctx.beginPath(); ctx.fillStyle = '#FF8F00'; ctx.arc(0,0,s*0.26,0,Math.PI*2); ctx.fill();
-        } else { // poppy/simple
-          ctx.fillStyle = '#FFCC4D';
-          ctx.strokeStyle = this.stroke;
-          ctx.lineWidth = Math.max(1, s/22);
-          ctx.beginPath(); ctx.moveTo(0, -s*0.9);
-          for(let i=0;i<6;i++){ ctx.quadraticCurveTo(s*0.6, -s*0.2, 0, s*0.6); ctx.rotate(Math.PI/3); }
-          ctx.closePath(); try{ ctx.fill(); ctx.stroke(); }catch(e){}
-          ctx.beginPath(); ctx.fillStyle = '#FF8F00'; ctx.arc(0,0,s*0.2,0,Math.PI*2); ctx.fill();
+        } else if(this.type === 'tulip'){
+          ctx.fillStyle = '#FFD874'; ctx.strokeStyle = this.stroke; ctx.lineWidth = Math.max(1, s/20);
+          ctx.beginPath(); ctx.moveTo(0,-s*0.9); ctx.bezierCurveTo(s*0.5,-s*0.6,s*0.5,-s*0.1,0,s*0.1); ctx.bezierCurveTo(-s*0.5,-s*0.1,-s*0.5,-s*0.6,0,-s*0.9); ctx.fill(); ctx.stroke(); ctx.beginPath(); ctx.fillStyle='#FFB74D'; ctx.arc(0,0,s*0.12,0,Math.PI*2); ctx.fill();
+        } else if(this.type === 'orchid'){
+          ctx.fillStyle = '#FFE8A3'; ctx.strokeStyle = this.stroke; ctx.lineWidth = Math.max(1, s/26);
+          for(let i=0;i<5;i++){ ctx.save(); ctx.rotate((i/5)*Math.PI*2 + (i%2?0.2:-0.1)); ctx.beginPath(); ctx.ellipse(0, -s*0.5, s*0.18 + (i%2? s*0.05:0), s*0.4, (i%2?0.2:-0.15), 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); }
+          ctx.beginPath(); ctx.fillStyle = '#FFAB40'; ctx.arc(0,0,s*0.14,0,Math.PI*2); ctx.fill();
+        } else if(this.type === 'carnation'){
+          ctx.fillStyle = '#FFE082'; ctx.strokeStyle = this.stroke; ctx.lineWidth = Math.max(1, s/30);
+          for(let i=0;i<8;i++){ ctx.save(); ctx.rotate((i/8)*Math.PI*2); ctx.beginPath(); ctx.ellipse(0, -s*0.6, s*0.22, s*0.32, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); }
+          ctx.beginPath(); ctx.fillStyle = '#FF8F00'; ctx.arc(0,0,s*0.16,0,Math.PI*2); ctx.fill();
+        } else if(this.type === 'daffodil'){
+          ctx.fillStyle = '#FFF176'; ctx.strokeStyle = this.stroke; ctx.lineWidth = Math.max(1,s/26);
+          for(let i=0;i<6;i++){ ctx.save(); ctx.rotate((i/6)*Math.PI*2); ctx.beginPath(); ctx.ellipse(0,-s*0.6,s*0.18,s*0.36,0,0,Math.PI*2); ctx.fill(); ctx.stroke(); ctx.restore(); }
+          ctx.beginPath(); ctx.fillStyle='#FFD54F'; ctx.ellipse(0, -s*0.15, s*0.2, s*0.18, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke();
+        } else if(this.type === 'chrysanthemum'){
+          ctx.fillStyle = '#FFE082'; ctx.strokeStyle = this.stroke; ctx.lineWidth = Math.max(1,s/36);
+          const petals = 24; for(let i=0;i<petals;i++){ ctx.save(); ctx.rotate((i/petals)*Math.PI*2); ctx.beginPath(); ctx.ellipse(0, -s*0.75, s*0.06, s*0.5, 0, 0, Math.PI*2); ctx.fill(); ctx.restore(); }
+          ctx.beginPath(); ctx.fillStyle='#FF8F00'; ctx.arc(0,0,s*0.18,0,Math.PI*2); ctx.fill();
+        } else if(this.type === 'lotus'){
+          ctx.fillStyle = '#FFF8E1'; ctx.strokeStyle = this.stroke; ctx.lineWidth = Math.max(1,s/30);
+          for(let i=0;i<8;i++){ ctx.save(); ctx.rotate((i/8)*Math.PI*2); ctx.beginPath(); ctx.moveTo(0,0); ctx.bezierCurveTo(s*0.15,-s*0.2,s*0.35,-s*0.6,0,-s*0.9); ctx.bezierCurveTo(-s*0.35,-s*0.6,-s*0.15,-s*0.2,0,0); ctx.fill(); ctx.stroke(); ctx.restore(); }
+          ctx.beginPath(); ctx.fillStyle='#FFD180'; ctx.arc(0,0,s*0.12,0,Math.PI*2); ctx.fill();
+        } else if(this.type === 'gerbera'){
+          ctx.fillStyle = '#FFE082'; ctx.strokeStyle = this.stroke; ctx.lineWidth = Math.max(1,s/32);
+          const petals = 20; for(let i=0;i<petals;i++){ ctx.save(); ctx.rotate((i/petals)*Math.PI*2); ctx.beginPath(); ctx.ellipse(0,-s*0.6,s*0.12,s*0.36,0,0,Math.PI*2); ctx.fill(); ctx.restore(); }
+          ctx.beginPath(); ctx.fillStyle='#FF8F00'; ctx.arc(0,0,s*0.26,0,Math.PI*2); ctx.fill();
         }
         // tallos pequeños (sutileza)
         ctx.restore();
@@ -513,8 +500,10 @@
     // Dibuja un tallo curvado desde el cono hasta la flor
     function drawStem(ctx, cx, cyBottom, fx, fy){
       ctx.save();
+      // tallo más grueso: aumentar el grosor máximo y usar una fórmula menos conservadora
       ctx.strokeStyle = 'rgba(60,110,50,0.95)';
-      ctx.lineWidth = Math.max(1, Math.min(4, (cyBottom - fy)/60));
+      // usar un grosor dinámico basado en la longitud del tallo, con límites mayores
+      ctx.lineWidth = Math.max(1.5, Math.min(8, (cyBottom - fy) / 45));
       ctx.beginPath();
       const midX = (cx + fx)/2 + (fx - cx) * 0.12;
       const midY = (cyBottom + fy)/2 - Math.abs(fx - cx) * 0.08;
@@ -557,7 +546,7 @@
         // asegurar que la flor quede por encima (arriba) del primer renglón del texto en el cono
         const minY = textY1 - textMargin - Math.max(16, coneW*0.06);
         if(y > minY) y = minY - rand(6, 28);
-        const types = ['lily','daisy','poppy','rose','sunflower'];
+        const types = ['sunflower','daisy','tulip','orchid','carnation','daffodil','chrysanthemum','lotus','gerbera'];
         const t = types[Math.floor(rand(0, types.length))];
         // reducir tamaño de las flores para no tapar texto del cono
         const size = rand(Math.max(12, coneW*0.10), Math.max(30, coneW*0.28)) * (1 - Math.abs((i - (count-1)/2)/(count*1.4)));
@@ -755,7 +744,8 @@
     setInterval(update, 1000);
     // exponer ajuste manual si se desea
     window.setTimeCounterOffset = function(px){ if(elCounter) elCounter.style.top = `calc(50% + ${px}px)` }
-  })();
+    })();
+    })();
   </script>
 </body>
 </html>

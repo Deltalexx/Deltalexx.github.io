@@ -9,10 +9,36 @@
     /* asegurar espacio para notch en iPhones modernos */
     body{background:#000;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
     canvas{display:block;width:100%;height:100%}
+    /* contador de tiempo debajo del cono */
+    #timeCounter{
+      position:absolute;
+      left:50%;
+      transform:translateX(-50%);
+      pointer-events:none;
+      z-index:20;
+      text-align:center;
+      color:#fff;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,'Helvetica Neue',Arial;
+      text-shadow:0 1px 2px rgba(0,0,0,0.6);
+      user-select:none;
+      top:calc(50% + 160px); /* valor por defecto; se ajusta dinámicamente */
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:6px;
+    }
+    #timePhrase{font-size:14px;opacity:0.95;line-height:1}
+    #timeValues{font-weight:700;font-size:16px;letter-spacing:0.4px;line-height:1.1;display:block;text-align:center}
   </style>
 </head>
 <body>
   <canvas id="scene"></canvas>
+
+  <!-- Contador de tiempo: frase + valores -->
+  <div id="timeCounter" aria-live="polite">
+    <div id="timePhrase">El tiempo a tu lado vuela</div>
+    <div id="timeValues">-- años · -- meses · -- días · -- horas · -- segundos</div>
+  </div>
 
   <script>
     const canvas = document.getElementById('scene');
@@ -373,73 +399,114 @@
       }
     }
 
-    // Dibuja el cono de papel en el centro
+    // Dibuja una maceta decorativa (reemplaza el cono)
     function drawCone(ctx, cx, cy, width, height){
+      // Mantener la misma API: cx,cy es la parte superior del envoltorio donde se colocan los textos
       ctx.save();
-      // cono base
+      // parámetros de la maceta
+      const potW = width;
+      const potH = Math.max(140, height * 0.9);
+      const rimH = Math.min(28, potH * 0.12);
+      const bodyH = potH - rimH;
+
+      // dibujar cuerpo de la maceta como un trapecio con lados curvos
       ctx.beginPath();
-      ctx.moveTo(cx - width/2, cy);
-      ctx.lineTo(cx + width/2, cy);
-      ctx.lineTo(cx, cy + height);
+      const leftTopX = cx - potW/2;
+      const rightTopX = cx + potW/2;
+      const leftBottomX = cx - potW*0.38;
+      const rightBottomX = cx + potW*0.38;
+      const topY = cy + rimH;
+      const bottomY = cy + potH;
+      ctx.moveTo(leftTopX, topY);
+      ctx.quadraticCurveTo(cx - potW*0.45, cy + potH*0.35, leftBottomX, bottomY);
+      ctx.lineTo(rightBottomX, bottomY);
+      ctx.quadraticCurveTo(cx + potW*0.45, cy + potH*0.35, rightTopX, topY);
       ctx.closePath();
-      ctx.fillStyle = '#C48A4B'; // kraft ligero
+      // gradiente del cuerpo
+      const gradBody = ctx.createLinearGradient(0, topY, 0, bottomY);
+      gradBody.addColorStop(0, '#C48A4B');
+      gradBody.addColorStop(1, '#8A5A2B');
+      ctx.fillStyle = gradBody;
       ctx.fill();
-      ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.25)';
       ctx.lineWidth = 2;
       ctx.stroke();
-      // texto en el envoltorio (conserva proporciones)
+
+      // dibujo del borde (rim) con encaje: una banda superior con semicírculos (scallops)
       ctx.save();
-      const txtW = width * 0.76;
-      let line1 = 'Para la mujer mas hermosa';
-      let line2 = 'Mi Esposhita';
-      // tamaño base proporcional
-      let font1 = Math.round(width * 0.04);
-      let font2 = Math.round(width * 0.055);
+      ctx.beginPath();
+      ctx.rect(leftTopX, cy, potW, rimH);
+      ctx.clip();
+      // banda base
+      ctx.fillStyle = '#F5E6D0';
+      ctx.fillRect(leftTopX, cy, potW, rimH);
+      // encaje inferior: semicírculos repetidos
+      const scallopR = Math.max(6, Math.min(12, potW / 30));
+      const step = scallopR * 2.2;
+      for(let x = leftTopX - scallopR; x <= rightTopX + scallopR; x += step){
+        ctx.beginPath();
+        ctx.arc(x + scallopR, cy + rimH, scallopR, Math.PI, 2*Math.PI);
+        ctx.fillStyle = '#FFF';
+        ctx.globalAlpha = 0.9;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = 'rgba(0,0,0,0.06)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      }
+      // pequeño entramado tipo encaje dentro de la banda
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = '#EAE5DF';
+      for(let i=0;i<Math.floor(potW/10);i++){
+        const px = leftTopX + i * 10 + 4;
+        ctx.beginPath();
+        ctx.moveTo(px, cy + 4);
+        ctx.lineTo(px + 6, cy + rimH - 6);
+        ctx.lineTo(px + 10, cy + 4);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.restore();
+
+      // decoración del cuerpo: líneas horizontales sutiles
+      ctx.save();
+      ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+      ctx.lineWidth = 1;
+      for(let y = topY + 10; y < bottomY - 10; y += 16){
+        ctx.beginPath(); ctx.moveTo(leftTopX + 6, y); ctx.lineTo(rightTopX - 6, y); ctx.stroke();
+      }
+      ctx.restore();
+
+      // texto dentro de la maceta: lista vertical con 4 líneas
+      ctx.save();
+      const txtW = potW * 0.76;
+      const lines = [
+        {text: 'Para la mujer mas hermosa', style: 'bold'},
+        {text: 'Mi Esposhita', style: 'italic'},
+        {text: '', style: 'italic'} // placeholder para el contador; se gestiona vía DOM
+      ];
+      let fontBase = Math.round(potW * 0.045);
       ctx.fillStyle = '#3e2a12';
       ctx.shadowColor = 'rgba(0,0,0,0.28)';
       ctx.shadowBlur = 6;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      // ajustar tamaño si excede
-      ctx.font = `bold ${font1}px serif`;
-      while(ctx.measureText(line1).width > txtW && font1 > 8){ font1 -= 1; ctx.font = `bold ${font1}px serif`; }
-      // bajar el primer renglón para que no lo tapen las flores
-      ctx.fillText(line1, cx, cy + height * 0.26);
-      ctx.font = `italic ${font2}px serif`;
-      while(ctx.measureText(line2).width > txtW && font2 > 10){ font2 -= 1; ctx.font = `italic ${font2}px serif`; }
-      ctx.fillText(line2, cx, cy + height * 0.36);
-      ctx.restore();
-      // banda azul cuadro (gingham) en la parte superior
-      const bandH = Math.min(40, width*0.22);
-      ctx.save();
-      ctx.beginPath();
-      ctx.rect(cx - width/2, cy - bandH + 6, width, bandH);
-      ctx.clip();
-      // dibujar patrón simple a cuadros
-      const cell = 12;
-      for(let x=cx - width/2; x<cx + width/2; x+=cell){
-        for(let y=cy - bandH + 6; y<cy + 6; y+=cell){
-          ctx.fillStyle = (((x+y)/cell)|0)%2? '#BEE3F8' : '#EAF6FF';
-          ctx.fillRect(x,y,cell,cell);
-        }
+      // centro vertical del cuerpo de la maceta
+      const centerY = cy + rimH + (bodyH / 2);
+      // calcular espacio entre líneas
+      const spacing = Math.max(8, Math.round(fontBase * 0.9));
+      // comenzar a dibujar desde arriba de centro, desplazando por (n-1)/2 * spacing
+      const startY = centerY - ((lines.length - 1) / 2) * spacing;
+      for(let i=0;i<lines.length;i++){
+        const ln = lines[i];
+        let fsz = Math.round(fontBase * (ln.style === 'bold' ? 1.0 : 0.95));
+        if(ln.style === 'bold') ctx.font = `bold ${fsz}px serif`; else ctx.font = `italic ${fsz}px serif`;
+        // ajustar si excede
+        while(ctx.measureText(ln.text).width > txtW && fsz > 8){ fsz -= 1; if(ln.style === 'bold') ctx.font = `bold ${fsz}px serif`; else ctx.font = `italic ${fsz}px serif`; }
+        ctx.fillText(ln.text, cx, startY + i * spacing);
       }
       ctx.restore();
-      // zigzag top edge
-      ctx.save();
-      ctx.beginPath();
-      const zigY = cy + 2;
-      const zigW = 12;
-      ctx.moveTo(cx - width/2, zigY);
-      let dir = 1;
-      for(let x=cx - width/2; x<=cx + width/2; x+=zigW){
-        ctx.lineTo(x, zigY + (dir? -8:8));
-        dir = 1-dir;
-      }
-      ctx.lineTo(cx + width/2, zigY);
-      ctx.closePath();
-      ctx.fillStyle = '#F5E6D0';
-      ctx.fill();
-      ctx.restore();
+
       ctx.restore();
     }
 
@@ -584,6 +651,111 @@
 
     // Si la pestaña estaba oculta, la primera animación puede saltar; forzar redraw en foco
     window.addEventListener('focus', ()=> resize());
+
+  // --- Contador de tiempo desde 15 sep 2025 ---
+  (function(){
+    const from = new Date('2025-09-15T00:00:00');
+    const elValues = document.getElementById('timeValues');
+    const elCounter = document.getElementById('timeCounter');
+    const elPhrase = document.getElementById('timePhrase');
+    if(!elValues) return;
+    function pad(n){return String(n).padStart(2,'0')}
+    function computeElapsed(fromDate, now){
+      let y = now.getFullYear() - fromDate.getFullYear();
+      let m = now.getMonth() - fromDate.getMonth();
+      let d = now.getDate() - fromDate.getDate();
+      let hh = now.getHours() - fromDate.getHours();
+      let mm = now.getMinutes() - fromDate.getMinutes();
+      let ss = now.getSeconds() - fromDate.getSeconds();
+
+      if(ss < 0){ ss += 60; mm -= 1 }
+      if(mm < 0){ mm += 60; hh -= 1 }
+      if(hh < 0){ hh += 24; d -= 1 }
+
+      if(d < 0){
+        const prevMonth = new Date(now.getFullYear(), now.getMonth(), 0); // último día mes previo
+        d += prevMonth.getDate();
+        m -= 1;
+      }
+      if(m < 0){ m += 12; y -= 1 }
+      return {years: y, months: m, days: d, hours: hh, minutes: mm, seconds: ss};
+    }
+
+    function update(){
+      const now = new Date();
+      // calcular años, meses, días, horas y segundos transcurridos
+      const t = computeElapsed(from, now);
+      // calcular tamaños y anchura interna de la maceta
+      const font2 = Math.max(10, Math.round(coneW * 0.055));
+      const txtW = Math.round(coneW * 0.76);
+
+      try{
+        // asegurar que el contenedor tenga el ancho máximo permitido
+        if(elCounter) elCounter.style.width = txtW + 'px';
+
+        // aplicar formato a la frase y forzar que sea bloque centrado
+        if(elPhrase){
+          elPhrase.style.display = 'block';
+          elPhrase.style.fontStyle = 'italic';
+          elPhrase.style.fontFamily = 'serif';
+          elPhrase.style.color = '#3e2a12';
+          elPhrase.style.width = txtW + 'px';
+          elPhrase.style.margin = '0';
+          elPhrase.style.lineHeight = '1.1';
+          elPhrase.style.overflow = 'hidden';
+          elPhrase.style.whiteSpace = 'normal';
+          elPhrase.style.textAlign = 'center';
+          // ajustar tamaño hasta que quepa
+          let ffs = font2;
+          elPhrase.style.fontSize = ffs + 'px';
+          while(elPhrase.scrollWidth > txtW && ffs > 8){ ffs -= 1; elPhrase.style.fontSize = ffs + 'px'; }
+        }
+
+        // aplicar formato al contador y colocarlo como bloque debajo de la frase
+        elValues.style.display = 'block';
+        elValues.style.fontStyle = 'italic';
+        elValues.style.fontFamily = 'serif';
+        elValues.style.color = '#3e2a12';
+        elValues.style.width = txtW + 'px';
+        elValues.style.textAlign = 'center';
+        elValues.style.overflow = 'hidden';
+        elValues.style.whiteSpace = 'normal';
+        // fijar texto consolidado en un único contenedor
+        elValues.textContent = `${t.years} años · ${t.months} meses · ${t.days} días · ${t.hours} horas · ${t.seconds} segundos`;
+        // ajustar tamaño de fuente si el texto no cabe
+        let fs = font2;
+        elValues.style.fontSize = fs + 'px';
+        while(elValues.scrollWidth > txtW && fs > 8){ fs -= 1; elValues.style.fontSize = fs + 'px'; }
+      }catch(e){
+        // fallback básico
+        elValues.textContent = `${t.years} años · ${t.months} meses · ${t.days} días · ${t.hours} horas · ${t.seconds} segundos`;
+      }
+
+      // posicionar el contenedor justo debajo de la tercera línea dibujada en la maceta
+      try{
+        const baseCy = window.innerHeight/2 - 20;
+        const drawCy = baseCy + 40; // mismo valor usado al llamar drawCone
+        const potW = coneW;
+        const potH = Math.max(180, coneW * 0.9);
+        const rimH = Math.min(28, potH * 0.12);
+        const bodyH = potH - rimH;
+        const fontBase = Math.round(potW * 0.045);
+        const spacing = Math.max(8, Math.round(fontBase * 0.9));
+        const centerY = drawCy + rimH + (bodyH / 2);
+        const startY = centerY - ((4 - 1) / 2) * spacing; // 4 líneas dibujadas
+        const thirdLineY = startY + 2 * spacing; // índice 2 (0-based)
+        const top = Math.round(thirdLineY + Math.max(8, spacing / 2));
+        if(elCounter) elCounter.style.top = `${top}px`;
+        // asegurar separación manejada por gap en el contenedor flex
+        if(elPhrase) elPhrase.style.marginBottom = '0';
+      }catch(e){/* silently ignore */}
+    }
+
+    update();
+    setInterval(update, 1000);
+    // exponer ajuste manual si se desea
+    window.setTimeCounterOffset = function(px){ if(elCounter) elCounter.style.top = `calc(50% + ${px}px)` }
+  })();
   </script>
 </body>
 </html>
